@@ -1,0 +1,62 @@
+### Requisições de exemplo (extensão REST Client do VS Code)
+### Rode "npm run seed" e cole aqui os ids que ele imprimir.
+
+@baseUrl = http://localhost:3000
+@productId = COLE_O_ID_DE_UM_PRODUTO
+@customerId = COLE_O_ID_DE_UM_CLIENTE
+@orderId = COLE_O_ID_DE_UM_PEDIDO
+
+### Listar produtos
+GET {{baseUrl}}/products
+
+### Buscar produtos por nome
+GET {{baseUrl}}/products?q=caneca
+
+### Cadastrar produto
+POST {{baseUrl}}/products
+Content-Type: application/json
+
+{ "name": "Boné Lions", "price": 59.9, "stock": 20 }
+
+### Ajustar estoque (+ entrada, - saída)
+PATCH {{baseUrl}}/products/{{productId}}/stock
+Content-Type: application/json
+
+{ "quantity": 10 }
+
+### Cadastrar cliente
+POST {{baseUrl}}/customers
+Content-Type: application/json
+
+{ "name": "Carla Dias", "email": "carla@example.com", "vip": false }
+
+### Buscar cliente
+GET {{baseUrl}}/customers/{{customerId}}
+
+### Atualizar cliente
+PUT {{baseUrl}}/customers/{{customerId}}
+Content-Type: application/json
+
+{ "name": "Carla D." }
+
+### Criar pedido
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "items": [{ "productId": "{{productId}}", "quantity": 2 }],
+  "coupon": "LIONS10"
+}
+
+### Listar pedidos
+GET {{baseUrl}}/orders
+
+### Detalhar pedido
+GET {{baseUrl}}/orders/{{orderId}}
+
+### Enviar pedido
+PATCH {{baseUrl}}/orders/{{orderId}}/ship
+
+### Relatório de faturamento
+GET {{baseUrl}}/reports/revenue
