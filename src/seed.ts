@@ -1,5 +1,3 @@
-// Popula o banco com alguns produtos e clientes para testar a API.
-// Uso: npm run seed
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 
@@ -12,6 +10,10 @@ async function seed() {
   await db.collection('products').deleteMany({});
   await db.collection('customers').deleteMany({});
   await db.collection('orders').deleteMany({});
+  await db.collection('coupons').deleteMany({});
+
+  await db.collection('customers').createIndex({ email: 1 }, { unique: true });
+  await db.collection('orders').createIndex({ customerId: 1, createdAt: -1 });
 
   const products = await db.collection('products').insertMany([
     { name: 'Camiseta Lions', price: 79.9, stock: 50, createdAt: new Date() },
@@ -25,10 +27,17 @@ async function seed() {
     { name: 'Bruno Lima', email: 'bruno@example.com', vip: true, createdAt: new Date() },
   ]);
 
+  const nextYear = new Date().getFullYear() + 1;
+  await db.collection<{ _id: string; [field: string]: unknown }>('coupons').insertMany([
+    { _id: 'LIONS10', discountPercent: 10, expiresAt: new Date(`${nextYear}-12-31T23:59:59.999`), redeemedBy: [], createdAt: new Date() },
+    { _id: 'BLACKFRIDAY', discountPercent: 30, expiresAt: new Date(`${nextYear}-11-30T23:59:59.999`), redeemedBy: [], createdAt: new Date() },
+  ]);
+
   console.log('Produtos criados:');
   console.table(Object.values(products.insertedIds).map((id) => id.toString()));
   console.log('Clientes criados (Ana = comum, Bruno = VIP):');
   console.table(Object.values(customers.insertedIds).map((id) => id.toString()));
+  console.log(`Cupons criados: LIONS10 (10%, até 31/12/${nextYear}) e BLACKFRIDAY (30%, até 30/11/${nextYear})`);
 
   await client.close();
 }

@@ -2,11 +2,11 @@
   "name": "lionsshop-api",
   "version": "1.0.0",
   "description": "API de pedidos da LionsShop: projeto base para o PBL de DDD com Node.js",
-  "main": "dist/app.js",
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "tsx watch src/main.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node dist/main.js",
     "seed": "tsx src/seed.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },

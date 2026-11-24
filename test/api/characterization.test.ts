@@ -1,25 +1,26 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import type { Express } from 'express';
-import type { Db } from 'mongodb';
+import { MongoClient, type Db } from 'mongodb';
+import { buildApp } from '../../src/main';
+import { FakeMailer } from '../support/fakes';
 
 jest.setTimeout(120_000);
 
 let mongo: MongoMemoryServer;
+let client: MongoClient;
 let app: Express;
 let db: Db;
 
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
-  process.env.MONGO_URL = mongo.getUri();
-  process.env.DB_NAME = 'lionsshop-legacy-test';
-  const legacy = await import('../../src/app');
-  app = legacy.app;
-  db = await legacy.getDb();
+  client = await MongoClient.connect(mongo.getUri());
+  db = client.db('lionsshop-characterization');
+  app = buildApp({ repository: 'mongo', db, mailer: new FakeMailer() });
 });
 
 afterAll(async () => {
-  await db?.client.close();
+  await client?.close();
   await mongo?.stop();
 });
 
@@ -27,7 +28,9 @@ beforeEach(async () => {
   await db.collection('products').deleteMany({});
   await db.collection('customers').deleteMany({});
   await db.collection('orders').deleteMany({});
-  jest.spyOn(console, 'log').mockImplementation(() => undefined);
+  await db.collection('coupons').deleteMany({});
+  await request(app).post('/coupons').send({ code: 'LIONS10', discountPercent: 10, expiresAt: '2099-12-31' }).expect(201);
+  await request(app).post('/coupons').send({ code: 'BLACKFRIDAY', discountPercent: 30, expiresAt: '2099-11-30' }).expect(201);
 });
 
 async function createProduct(body = { name: 'Camiseta Lions', price: 79.9, stock: 50 }) {
@@ -128,7 +131,7 @@ describe('pedidos', () => {
     expect(detail.body).toMatchObject({ subtotal: 79.9, total: 79.9, status: 'PENDENTE' });
 
     await request(app).patch(`/orders/${order.id}/ship`).expect(200);
-    await request(app).patch(`/orders/${order.id}/ship`).expect(400);
+    await request(app).patch(`/orders/${order.id}/ship`).expect(409);
   });
 
   it('relatório de faturamento soma os pedidos', async () => {
@@ -139,7 +142,7 @@ describe('pedidos', () => {
     expect(res.body).toEqual({ orders: 1, revenue: 79.9 });
   });
 
-  it('BUG conhecido: o relatório ignora o desconto BLACKFRIDAY', async () => {
+  it('relatório usa o total cobrado (corrige o bug que ignorava o BLACKFRIDAY)', async () => {
     const p = await createProduct({ name: 'Item', price: 100, stock: 10 });
     const c = await createCustomer();
     const order = (
@@ -147,6 +150,6 @@ describe('pedidos', () => {
     ).body;
     expect(order.total).toBe(70);
     const res = await request(app).get('/reports/revenue');
-    expect(res.body.revenue).toBe(100);
+    expect(res.body.revenue).toBe(70);
   });
 });
