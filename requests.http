@@ -1,5 +1,6 @@
 ### Requisições de exemplo (extensão REST Client do VS Code)
 ### Rode "npm run seed" e cole aqui os ids que ele imprimir.
+### O seed também cria os cupons LIONS10 e BLACKFRIDAY.
 
 @baseUrl = http://localhost:3000
 @productId = COLE_O_ID_DE_UM_PRODUTO
@@ -60,3 +61,30 @@ PATCH {{baseUrl}}/orders/{{orderId}}/ship
 
 ### Relatório de faturamento
 GET {{baseUrl}}/reports/revenue
+
+### ---------------- Novos casos de uso ----------------
+
+### Cancelar pedido (só pendente; itens voltam ao estoque)
+PATCH {{baseUrl}}/orders/{{orderId}}/cancel
+
+### Cadastrar cupom (data sem horário vale até o fim do dia)
+POST {{baseUrl}}/coupons
+Content-Type: application/json
+
+{ "code": "NATAL15", "discountPercent": 15, "expiresAt": "2026-12-25" }
+
+### Listar cupons
+GET {{baseUrl}}/coupons
+
+### Pedido usando o cupom cadastrado (uma vez por cliente)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "items": [{ "productId": "{{productId}}", "quantity": 1 }],
+  "coupon": "NATAL15"
+}
+
+### Pedidos do cliente (mais recentes primeiro, com status e total)
+GET {{baseUrl}}/customers/{{customerId}}/orders
